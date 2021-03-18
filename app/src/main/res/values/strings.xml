@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">CFTCurrencyTask</string>
+    <string name="coin_picture">Иконка монетки</string>
+    <string name="choose_a_currency_to_convert">Выберите валюту для конвертации</string>
+    <string name="down_or_up_arrow">Стрелка вверх или вниз</string>
+    <string name="insert_an_amount">Введите количество рублей для конвертации</string>
+    <string name="convert">Конвертировать</string>
+    <string name="how_much_do_you_want_to_convert">Сколько выхотите конвертировать?</string>
+    <string name="search">Поиск</string>
+    <string name="sort">Сортировка</string>
+    <string name="sort_by_name">Сортировать по названию</string>
+    <string name="sort_by_code">Сортировать по кодовому имени</string>
+    <string name="instructions">Введите количество рублей и нажмите \'Конвертировать\'</string>
+</resources>

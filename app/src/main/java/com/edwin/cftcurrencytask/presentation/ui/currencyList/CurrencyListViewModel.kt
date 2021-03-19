@@ -1,10 +1,8 @@
 package com.edwin.cftcurrencytask.presentation.ui.currencyList
 
 import androidx.lifecycle.*
-import com.edwin.cftcurrencytask.data.database.dao.CurrencyDao
 import com.edwin.cftcurrencytask.data.domain.model.Currency
 import com.edwin.cftcurrencytask.data.repository.CurrencyRepository
-import com.edwin.cftcurrencytask.data.util.ConnectionCheck
 import com.edwin.cftcurrencytask.data.util.PreferencesManager
 import com.edwin.cftcurrencytask.data.util.SortOrder
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -12,7 +10,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -21,11 +18,9 @@ import javax.inject.Inject
 @HiltViewModel
 @ExperimentalCoroutinesApi
 class CurrencyListViewModel @Inject constructor(
-    private val connectionCheck: ConnectionCheck,
-    private val currencyRepository: CurrencyRepository,
-    private val currencyDao: CurrencyDao,
-    private val preferencesManager: PreferencesManager,
-    state: SavedStateHandle
+        private val currencyRepository: CurrencyRepository,
+        private val preferencesManager: PreferencesManager,
+        state: SavedStateHandle
 ) : ViewModel() {
 
     val searchQuery = state.getLiveData("searchQuery", "")
@@ -33,33 +28,18 @@ class CurrencyListViewModel @Inject constructor(
     private val currenciesEventChannel = Channel<CurrencyListEvents>()
     val currenciesEvent = currenciesEventChannel.receiveAsFlow()
     var currencies = liveData<List<Currency>> { }
-    var isConnected = connectionCheck.hasInternetConnection()
 
-    private fun getCurrenciesFromServerAsFlow() = combine(
-        searchQuery.asFlow(),
-        preferencesFlow
+    private fun getCurrencies() = combine(
+            searchQuery.asFlow(),
+            preferencesFlow
     ) { query, sortOrder ->
         Pair(query, sortOrder)
     }.flatMapLatest { (query, sortOrder) ->
-        flowOf(currencyRepository.getCurrencies(query, sortOrder))
-    }
-
-    private fun getCurrenciesFromDbAsFlow() = combine(
-        searchQuery.asFlow(),
-        preferencesFlow
-    ) { query, sortOrder ->
-        Pair(query, sortOrder)
-    }.flatMapLatest { (query, sortOrder) ->
-        currencyDao.getCurrencies(query, sortOrder)
+        currencyRepository.getCurrencies(query, sortOrder)
     }
 
     fun refreshData() {
-        isConnected = connectionCheck.hasInternetConnection()
-        currencies = if (isConnected) {
-            getCurrenciesFromServerAsFlow().asLiveData()
-        } else {
-            getCurrenciesFromDbAsFlow().asLiveData()
-        }
+        currencies = getCurrencies().asLiveData()
     }
 
     fun onSortOrderSelected(sortOrder: SortOrder) = viewModelScope.launch {

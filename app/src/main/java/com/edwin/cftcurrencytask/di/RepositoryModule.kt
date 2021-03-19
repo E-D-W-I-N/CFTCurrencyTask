@@ -5,6 +5,7 @@ import com.edwin.cftcurrencytask.data.network.CurrencyApi
 import com.edwin.cftcurrencytask.data.network.model.CurrencyDtoMapper
 import com.edwin.cftcurrencytask.data.repository.CurrencyRepository
 import com.edwin.cftcurrencytask.data.repository.CurrencyRepositoryImpl
+import com.edwin.cftcurrencytask.data.util.ConnectionCheck
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -18,10 +19,11 @@ object RepositoryModule {
     @Provides
     @Singleton
     fun provideCurrencyRepository(
-        currencyApi: CurrencyApi,
-        currencyDao: CurrencyDao,
-        currencyDtoMapper: CurrencyDtoMapper
+            connectionCheck: ConnectionCheck,
+            currencyApi: CurrencyApi,
+            currencyDao: CurrencyDao,
+            currencyDtoMapper: CurrencyDtoMapper
     ): CurrencyRepository {
-        return CurrencyRepositoryImpl(currencyApi, currencyDao, currencyDtoMapper)
+        return CurrencyRepositoryImpl(connectionCheck, currencyApi, currencyDao, currencyDtoMapper)
     }
 }

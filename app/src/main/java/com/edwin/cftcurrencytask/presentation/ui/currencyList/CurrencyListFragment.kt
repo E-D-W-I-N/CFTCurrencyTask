@@ -31,7 +31,7 @@ import java.util.concurrent.TimeUnit
 @AndroidEntryPoint
 @ExperimentalCoroutinesApi
 class CurrencyListFragment : Fragment(R.layout.currency_list_fragment),
-    CurrencyAdapter.OnItemClickListener {
+        CurrencyAdapter.OnItemClickListener {
 
     private val viewModel: CurrencyListViewModel by viewModels()
 
@@ -43,18 +43,19 @@ class CurrencyListFragment : Fragment(R.layout.currency_list_fragment),
         val binding = CurrencyListFragmentBinding.bind(view)
 
         val currencyAdapter = CurrencyAdapter(this)
-
+        setHasOptionsMenu(true)
         observer = Observer {
-            binding.progressBar.visibility = View.VISIBLE
-            currencyAdapter.submitList(it)
-            binding.progressBar.visibility = View.GONE
-            if (it.isNullOrEmpty() && !viewModel.isConnected && searchView.isIconified) {
+            if (it.isNullOrEmpty() && searchView.isIconified) {
                 binding.progressBar.visibility = View.GONE
                 Snackbar.make(
-                    requireView(),
-                    "Отсутствует подключение к интернету, а также данные в базе данных",
-                    Snackbar.LENGTH_LONG
+                        requireView(),
+                        "Отсутствует подключение к интернету, а также данные в базе данных",
+                        Snackbar.LENGTH_LONG
                 ).show()
+            } else {
+                binding.progressBar.visibility = View.VISIBLE
+                currencyAdapter.submitList(it)
+                binding.progressBar.visibility = View.GONE
             }
         }
 
@@ -73,41 +74,40 @@ class CurrencyListFragment : Fragment(R.layout.currency_list_fragment),
         }
 
         setupWorker()
+        viewModel.currencies.observe(viewLifecycleOwner, observer)
 
         viewLifecycleOwner.lifecycleScope.launchWhenStarted {
             viewModel.currenciesEvent.collect { event ->
                 when (event) {
                     is CurrencyListViewModel.CurrencyListEvents.NavigateToCurrencyConvertScreen -> {
                         val action =
-                            CurrencyListFragmentDirections.actionCurrencyListFragmentToCurrencyConvertFragment(
-                                event.currency,
-                                "RUB -> ${event.currency.charCode}"
-                            )
+                                CurrencyListFragmentDirections.actionCurrencyListFragmentToCurrencyConvertFragment(
+                                        event.currency,
+                                        "RUB -> ${event.currency.charCode}"
+                                )
                         findNavController().navigate(action)
                     }
                 }
             }
         }
-
-        setHasOptionsMenu(true)
     }
 
     private fun setupWorker() {
-        val refreshCurrency = PeriodicWorkRequestBuilder<DataRefreshWorker>(1, TimeUnit.HOURS)
-            .setInitialDelay(1, TimeUnit.HOURS)
-            .build()
+        val refreshCurrency = PeriodicWorkRequestBuilder<DataRefreshWorker>(15, TimeUnit.MINUTES)
+                .setInitialDelay(15, TimeUnit.MINUTES)
+                .build()
 
         val workManager = WorkManager.getInstance(requireContext())
         workManager.enqueueUniquePeriodicWork(
-            "refreshCurrencies", ExistingPeriodicWorkPolicy.REPLACE, refreshCurrency
+                "refreshCurrencies", ExistingPeriodicWorkPolicy.REPLACE, refreshCurrency
         )
         workManager.getWorkInfoByIdLiveData(refreshCurrency.id)
-            .observe(viewLifecycleOwner, { workInfo ->
-                if (workInfo != null && workInfo.state == WorkInfo.State.ENQUEUED) {
-                    viewModel.refreshData()
-                    viewModel.currencies.observe(viewLifecycleOwner, observer)
-                }
-            })
+                .observe(viewLifecycleOwner, { workInfo ->
+                    if (workInfo != null && workInfo.state == WorkInfo.State.ENQUEUED) {
+                        viewModel.refreshData()
+                        viewModel.currencies.observe(viewLifecycleOwner, observer)
+                    }
+                })
     }
 
     override fun onItemClick(currency: Currency) {
